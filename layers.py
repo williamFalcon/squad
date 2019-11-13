@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from squad.util import masked_softmax
+from reading_hw.util import masked_softmax
 
 
 class Embedding(nn.Module):
@@ -97,17 +97,18 @@ class RNNEncoder(nn.Module):
         orig_len = x.size(1)
 
         # Sort by length and pack sequence for RNN
-        lengths, sort_idx = lengths.sort(0, descending=True)
-        x = x[sort_idx]     # (batch_size, seq_len, input_size)
-        x = pack_padded_sequence(x, lengths, batch_first=True)
+#         lengths, sort_idx = lengths.sort(0)
+#         print(lengths, sort_idx)
+#         x = x[sort_idx]     # (batch_size, seq_len, input_size)
+        x = pack_padded_sequence(x, lengths, batch_first=True, enforce_sorted=False)
 
         # Apply RNN
         x, _ = self.rnn(x)  # (batch_size, seq_len, 2 * hidden_size)
 
         # Unpack and reverse sort
         x, _ = pad_packed_sequence(x, batch_first=True, total_length=orig_len)
-        _, unsort_idx = sort_idx.sort(0)
-        x = x[unsort_idx]   # (batch_size, seq_len, 2 * hidden_size)
+#         _, unsort_idx = sort_idx.sort(0)
+#         x = x[unsort_idx]   # (batch_size, seq_len, 2 * hidden_size)
 
         # Apply dropout (RNN applies dropout after all but the last layer)
         x = F.dropout(x, self.drop_prob, self.training)
